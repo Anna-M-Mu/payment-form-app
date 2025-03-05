@@ -14,4 +14,4 @@ EXPOSE 8000
 
 RUN chmod +x /app/start.sh
 
-CMD ["/app/start.sh"]
+CMD /bin/bash -c "python manage.py migrate --noinput && uwsgi --http 0.0.0.0:8000 --module config.wsgi:application"
