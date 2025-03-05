@@ -105,8 +105,8 @@ def pay_for_order(request, id):
         mode='payment',
         metadata=metadata,
         discounts=discounts,
-        success_url='http://localhost:8000/success',
-        cancel_url='http://localhost:8000/cancel',
+        success_url='https://payment-form-app.onrender.com/success',
+        cancel_url='https://payment-form-app.onrender.com/cancel',
     )
     
     return JsonResponse({'session_id': session.id})
