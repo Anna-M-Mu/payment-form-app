@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enter Payment Details</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <h2>Enter Your Card Details</h2>
+    <form id="payment-form">
+        <p id="price-initial"></p>
+        <p id="tax-info"></p>
+        <p id="discount-info"></p>
+        <p id="price-final"></p>
+        <div id="card-element"></div>
+        <button type="submit">Confirm Payment</button>
+        <p id="payment-status"></p>
+    </form>
+
+    <script>
+        const stripePublicKey = "{{ stripe_public_key|escapejs }}";
+        const clientSecret = "{{ client_secret|escapejs }}";
+        const totalPrice = "{{ total_price|escapejs }}";
+        const finalAmount = "{{ final_amount|escapejs }}";
+        const discount = "{{ discount|escapejs }}";
+        const tax = "{{ tax|escapejs }}";
+        const currency = "{{ currency|escapejs }}";
+        const stripe = Stripe(stripePublicKey);
+
+        document.getElementById("price-initial").innerText = `Subtotal:  {% if currency == "usd" %} $ {% elif currency == "eur" %} € {% endif %}${(totalPrice / 100).toFixed(2)}`;
+        document.getElementById("discount-info").innerText = `Discount:  {% if currency == "usd" %} $ {% elif currency == "eur" %} € {% endif %}${(discount / 100).toFixed(2)}`;
+        document.getElementById("tax-info").innerText = `Tax:  {% if currency == "usd" %} $ {% elif currency == "eur" %} € {% endif %}${(tax / 100).toFixed(2)}`;
+        document.getElementById("price-final").innerText = `Total due:  {% if currency == "usd" %} $ {% elif currency == "eur" %} € {% endif %}${(finalAmount / 100).toFixed(2)}`;
+
+        document.body.addEventListener("touchstart", function () {}, { passive: true });
+        document.body.addEventListener("wheel", function () {}, { passive: true });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const elements = stripe.elements();
+            const cardElement = elements.create("card");
+            cardElement.mount("#card-element");
+
+            document.querySelector("#payment-form").addEventListener("submit", async function (e) {
+                e.preventDefault();
+
+                const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
+                    payment_method: { card: cardElement }
+                });
+
+                if (error) {
+                    document.getElementById("payment-status").innerText = "Payment failed: " + error.message;
+                } else if (paymentIntent.status === "succeeded") {
+                    document.getElementById("payment-status").innerText = "Payment successful!";
+                }
+            });
+        });
+    </script>
+</body>
+</html>

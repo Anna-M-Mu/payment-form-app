@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Order</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Create Order</h1>
+
+    <form id="order-form">
+        <label>Select Items:</label>
+        <ul>
+            {% for item in items %}
+                <li>
+                    <input type="checkbox" name="items" value="{{ item.id }}" data-currency="{{ item.currency }}">
+                    {{ item.name }} - 
+                    {% if item.currency == "usd" %} $ {% elif item.currency == "eur" %} € {% endif %}
+                    {{ item.price_in_main_unit }}
+                </li>
+            {% endfor %}
+        </ul>
+        
+
+        <button type="button" id="save-button">Create Order</button>
+    </form>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let checkboxes = document.querySelectorAll("input[name='items']");
+            let selectedCurrency = null;
+
+            checkboxes.forEach(cb => {
+                cb.addEventListener("change", function () {
+                    if (this.checked) {
+                        let itemCurrency = this.getAttribute("data-currency");
+                        if (!selectedCurrency) {
+                            selectedCurrency = itemCurrency;
+                        }
+                        checkboxes.forEach(checkBox => {
+                            if (checkBox.getAttribute("data-currency") !== selectedCurrency) {
+                                checkBox.disabled = true;
+                            }
+                        });
+                    } else {
+                        if (![...checkboxes].some(cb => cb.checked)) {
+                            selectedCurrency = null;
+                            checkboxes.forEach(checkBox => (checkBox.disabled = false));
+                        }
+                    }
+                });
+            });
+        });
+
+        document.getElementById("save-button").addEventListener("click", function () {
+            let selectedItems = [];
+            document.querySelectorAll('input[name="items"]:checked').forEach(checkbox => {
+                selectedItems.push(checkbox.value);
+            });
+
+            fetch("/saveorder/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                body: JSON.stringify({ items: selectedItems })
+            })
+            .then(response => response.json())
+            .then(data => {
+                window.location.href = `/order/${data.order_id}/`;
+            })
+            .catch(error => console.error("Error:", error));
+        });
+
+        // Function to get CSRF token for Django
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                let cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    let cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>
